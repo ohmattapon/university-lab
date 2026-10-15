@@ -26,7 +26,7 @@ jobs:
           kubectl -n university-lab rollout status deploy/frontend --timeout=180s
       - name: Smoke test via Ingress
         run: |
-          kubectl -n university-lab port-forward svc/traefik 38080:80 & PF=$!
+          kubectl -n kube-system port-forward svc/traefik 38080:80 & PF=$!
           sleep 8
           curl -sf http://127.0.0.1:38080/api/hello
           echo
