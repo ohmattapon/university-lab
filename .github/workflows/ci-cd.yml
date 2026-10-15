@@ -1,0 +1,35 @@
+name: ci-cd
+on:
+  push:
+    branches: [master]
+jobs:
+  build-deploy:
+    runs-on: [self-hosted, wsl]
+    env:
+      K3D: /home/attpon1579/.local/bin/k3d
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t lab-backend:latest ./backend
+      - name: Build frontend image
+        run: docker build -t lab-frontend:latest ./frontend
+      - name: Import images into k3d
+        run: |
+          $K3D image import lab-backend:latest lab-frontend:latest -c university-lab
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/backend.yaml -f k8s/frontend.yaml -f k8s/ingress.yaml -f k8s/hpa.yaml
+      - name: Wait for rollout
+        run: |
+          kubectl -n university-lab rollout status deploy/backend --timeout=180s
+          kubectl -n university-lab rollout status deploy/frontend --timeout=180s
+      - name: Smoke test via Ingress
+        run: |
+          kubectl -n university-lab port-forward svc/traefik 38080:80 & PF=$!
+          sleep 8
+          curl -sf http://127.0.0.1:38080/api/hello
+          echo
+          curl -sf http://127.0.0.1:38080/health
+          echo
+          kill $PF
