@@ -1,0 +1,28 @@
+# Traefik (k3d default) Ingress:
+#   /api/* -> backend:3001   (lab rule: /api/* backend only)
+#   /*      -> frontend:80
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: university-lab
+  namespace: university-lab
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 3001
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
